@@ -1,0 +1,19 @@
+#
+#  Global parameters
+#
+
+paths:
+  projectpath: /home/patrycja.rosa/BLZ_analysis
+  datadir: data
+  genomedatadir: data/genome
+  resultsdir: results
+  configdir: config
+  envdir: env
+  tmpdir: tmp
+  srcdir: src
+  shellsrcdir: src/sh
+  Rsrcdir: src/R
+  snakemakesrcdir: src/snakemake
+
+genome:
+  symbol: "mm10"
