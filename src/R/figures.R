@@ -13,7 +13,13 @@ library(qs)
 library(scuttle)
 library(ggpubr)
 library(reshape2)
-load("data/pathfindR_enrichment.RData")
+library(pathfindR)
+library(CellChat)
+library(NMF)
+library(ggalluvial)
+
+
+
 
 ###### colors ########
 
@@ -171,8 +177,98 @@ enrichment_chart(
 
 
 ##### Figure 3 ######
+#dimplot with control and repopulated 
+Idents(seu) <- "celltypes"
+DimPlot(seu, split.by = "condition", ncol = 2 , cols = alpha(colorpalette, 0.5), 
+        label = TRUE, label.size = 3.5)
+
+#celltype contribution
+dittoBarPlot(seu,"celltypes",group.by = "condition", color.panel = colorpalette, x.reorder = c(2,1,4,3),
+             var.labels.reorder = c(4,1,5,2,6,3,7,8), 
+             main = "",xlab = "Condition", ylab = "Percentage of cells") + theme(axis.title.x = element_text(size = 15),
+                                                                                 axis.text.x = element_text(size = 12, colour = "black"),
+                                                                                 axis.title.y = element_text(size = 15),
+                                                                                 axis.text.y = element_text(size = 12),
+                                                                                 legend.text = element_text(size = 12))
+#MG3 reactome pathway
+#Reactome pathway of pre-MG
+#search for the genes which identifies activated cell types
+celltypes_all <- FindAllMarkers(seu, logfc.threshold = 0.25,  min.pct = 0.25, test.use = "negbinom")
+
+MG3 <- as.data.frame(rownames(celltypes_all))
+MG3 <- cbind(MG3, celltypes_all$avg_log2FC, celltypes_all$p_val_adj)
+names(MG3) <- c('Gene.symbol','logFC','adj.P.Val')
+MG3$Gene.symbol <- toupper(MG3$Gene.symbol)
+MG3_Reactome <- run_pathfindR(MG3, gene_sets = 'Reactome')
+
+mg3_10 <- MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-72613'),]
+mg3_10<- rbind(mg3_10, MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-927802'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-9711097'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-168255'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-72163'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-69610'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-169911'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-450531'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-1169091'),],
+               MG3_Reactome[which(MG3_Reactome$ID == 'R-HSA-1234174'),])
+
+#chromatin remodeling markers from MG3 GO-BP expression in heatmap
+chromatin_rem <- c('Actl6a', 'Hdac2', 'Myc', 'Smarcb1', 'Ruvbl1', 'Mcrs1', 'Ruvbl2', 'Nudt5', 'Uchl5', 
+                   'Pole3', 'Gatad2a', 'Pih1d1', 'Smarcad1')
 
 
+seu.sce <- as.SingleCellExperiment(seu)
+condition_mean <- aggregateAcrossCells(as(seu.sce, "SingleCellExperiment"),  
+                                       ids = seu.sce$condition, 
+                                       statistics = "mean",
+                                       use.assay.type = "counts")
+
+
+dittoHeatmap(condition_mean,
+             assay = "counts", 
+             genes = chromatin_rem,
+             annot.by = "condition",
+             scale = "none",
+             heatmap.colors = rev(brewer.pal(11,'RdBu')),
+             annot.colors = condition_colors)
+
+
+
+#extract counts
+data.input <- seu@assays$RNA@data
+## re-do it separately for repopulated young condition
+meta <- seu@meta.data
+cell.use <- rownames(meta)[meta$condition == "repopulated old"]
+
+data.input <- data.input[,cell.use]
+meta <- meta[cell.use,]
+
+#create cellchat object
+cellchat <- createCellChat(object = data.input, meta = meta, group.by = "celltypes")
+CellChatDB <- CellChatDB.mouse
+showDatabaseCategory(CellChatDB)
+dplyr::glimpse(CellChatDB$interaction)
+CellChatDB.use <- CellChatDB
+cellchat@DB <- CellChatDB.use
+
+# subset the expression data of signaling genes for saving computation cost
+cellchat <- subsetData(cellchat) 
+future::plan("multisession", workers = 4) 
+cellchat <- identifyOverExpressedGenes(cellchat)
+cellchat <- identifyOverExpressedInteractions(cellchat)
+cellchat <- computeCommunProb(cellchat)
+cellchat <- filterCommunication(cellchat, min.cells = 10)
+cellchat <- computeCommunProbPathway(cellchat)
+cellchat <- aggregateNet(cellchat)
+
+netAnalysis_signalingRole_network(cellchat, signaling = pathways.show, width = 8, height = 2.5, font.size = 10)
+
+ht1 <- netAnalysis_signalingRole_heatmap(cellchat, pattern = "outgoing")
+ht2 <- netAnalysis_signalingRole_heatmap(cellchat, pattern = "incoming")
+ht1 + ht2
+
+
+##### Figure 4 #####
 
 ###### markers #######
 
@@ -222,9 +318,6 @@ apoptosis <- c('Apip', 'Bak1', 'Bcl2', 'Bcl2l1', 'Casp8', 'Cdkn2a', 'Dapk3', 'Dn
 
 
 
-#chromatin remodeling markers from GO-BP 
-chromatin_rem <- c('Actl6a', 'Hdac2', 'Myc', 'Smarcb1', 'Ruvbl1', 'Mcrs1', 'Ruvbl2', 'Nudt5', 'Uchl5', 
-                   'Pole3', 'Gatad2a', 'Pih1d1', 'Smarcad1')
 
 
 
@@ -251,11 +344,6 @@ seu <- AddModuleScore(
 )
 
 
-seu.sce <- as.SingleCellExperiment(seu)
-condition_mean <- aggregateAcrossCells(as(seu.sce, "SingleCellExperiment"),  
-                                       ids = seu.sce$condition, 
-                                       statistics = "mean",
-                                       use.assay.type = "counts")
 
 genenames <- as.data.frame(rownames(seu))
 
@@ -286,19 +374,9 @@ Plot_Density_Custom(young, features = inflammation_markers, custom_palette = bre
 
 ####### plots all #######
 
-#dimplot with control and repopulated 
-Idents(seu) <- "celltypes"
-DimPlot(seu, split.by = "condition", ncol = 2 , cols = alpha(colorpalette, 0.5), 
-        label = TRUE, label.size = 3.5)
 
-#celltype contribution
-dittoBarPlot(seu,"celltypes",group.by = "condition", color.panel = colorpalette, x.reorder = c(2,1,4,3),
-             var.labels.reorder = c(4,1,5,2,6,3,7,8), 
-             main = "",xlab = "Condition", ylab = "Percentage of cells") + theme(axis.title.x = element_text(size = 15),
-                                                   axis.text.x = element_text(size = 12, colour = "black"),
-                                                   axis.title.y = element_text(size = 15),
-                                                   axis.text.y = element_text(size = 12),
-                                                   legend.text = element_text(size = 12))
+
+
 
 Idents(seu) <- "condition"
 
@@ -310,23 +388,10 @@ Plot_Density_Joint_Only(seu, features = apoptosome, custom_palette = brewer.pal(
 
 
 
-#heatmap
-dittoHeatmap(seu, genes = apoptosome,  cluster_cols = FALSE, 
-             heatmap.colors = viridis(100), 
-             scaled.to.max = TRUE,
-             heatmap.colors.max.scaled = inferno(100),
-             annot.by = "condition",
-             annot.colors = condition_colors)
 
 
 
-dittoHeatmap(condition_mean,
-             assay = "counts", 
-             genes = apoptosis,
-             annot.by = "condition",
-             scale = "none",
-             heatmap.colors = rev(brewer.pal(11,'RdBu')),
-             annot.colors = condition_colors)
+
 
 DotPlot(seu, features = apoptosome)
 
