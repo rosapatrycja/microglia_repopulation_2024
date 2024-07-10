@@ -13,116 +13,18 @@ library(qs)
 library(scuttle)
 library(ggpubr)
 library(reshape2)
-
-setwd("/mnt/wspolny/patrycja.rosa/BLZ_analysis")
 load("data/pathfindR_enrichment.RData")
 
 ###### colors ########
-
-# mycolors <- c(c("MG_1", "#f4a582"), 
-#               c("Stim-MG1", "#d6604d") ,
-#               c("MG_2", "#7fc97f") ,
-#               c("Stim-MG2","#33a02c") ,
-#               c("MG3","#a6cee3") ,
-#               c("Stim-MG3", "#1f78b4") ,
-#               c("pre-MG","#984ea3") ,
-#               c("prolif-MG","#ff7f00"))
 
 #set color palletes for plotting 
 colorpalette <- c("#f4a582","#d6604d","#7fc97f","#33a02c","#a6cee3","#1f78b4","#984ea3","#ff7f00")
 condition_colors <- c('#919cb3', '#233867','#f5af91','#eb5f22')
 
-###### markers #######
-
-#create vectors with marker genes 
-mg1_markers <- c("Tmem119", "Crybb1", "Cst3", "P2ry12", "Pros1")
-mg2_markers <- c("Jun", "Junb", "Jund", "Fos", "Klf6")
-mg3_markers <- c("Bmp2k", "Bhlhe41", "Ncoa3", "Tram1", "Notch2")
-proliferating_markers <- c("Cdkn2a", "Esco1", "Esco2",  "Cdk1", "H2afx")
-inflammation_markers <- c("Mcm5","Ifitm3", "Irf7", "Isg15", "Usp18", "Mif")
-premg_markers <- c("Csf1", "Mcm5", "Cst7", "Mif", "Ccl12", "Ccl3", "Ccl4", 
-                   "Ifit1", "Ifit3", "Ifit3b", "Ifitm3", "Irf7", "Isg15", "Usp18")
-actmg1 <- c('B2m','Bst2','Lgals3bp','Ccl2','Ccl12')
-actmg3 <- c('Lgals3','Fabp5', 'Gpnmb', 'Spp1', 'Apoe', 'Ctss', 'Cstb', 'Ctsd')
-Mhc <- c('H2-Aa','H2-Ab1','H2-Eb1','B2m','H2-D1','H2-K1','H2-Oa','H2-DMa')
-phagocytosis <- c('Gpnmb', 'Lgals3','Fabp5', 'Apoe','Spp1', 'Cstb','Cstdc1')
-cytokine <- c('Tnf', 'Ccl2','Ccl3','Ccl4','Ccl7','Ccl12')
-
-#chosen markers from all microglia subtypes
-markers <- as.factor(c("Tmem119", "P2ry12", "Jun", "Fos", "Bmp2k", "Notch2", 
-                       'H2-D1','H2-Oa','H2-DMa',
-                       "Esco1", "Cdk1", "H2afx",
-                       "Csf1", "Mif", "Ifit1", "Irf7"))
-
-
-
-
-#Radial Glia
-arg <- c('Sox2', 'Hopx','Pea15a', 'Sparc', 'Gfap', 'Vim')
-#proliferative associated microglia
-pam <- c('Clec7a', 'Spp1', 'Igf1', 'Gpnmb')
-#axon tract associated microgla 
-atm <- c('Spp1', 'Igf1', 'Gpnmb', 'Lamp1')
-#white mater associated microglia
-wam <- c('Apoe', 'Cd63', 'Cst7')
-#disease associated microglia
-dam <- c('Apoe', 'Lpl', 'Trem2')
-#microglial neurodegenerative phenotype
-mgnd <- c('Apoe', 'Spp1', 'Trem2')
-#activated response microglia
-arm <- c('Apoe', 'Cst7', 'Ctsd')
-#micorglia inflamed in multiple sclerosis (MS)
-mims <- c('Apoe','Lpl','Trem2','Cd68')
-#in Amyotrophic lateral sclerosis
-alsdam <- c('Trem2', 'Cd81', 'Cebpa', 'Ptprg')
-#in Parkinson disease 
-pddam <- c('Hmgb1', 'Hspd1', 'Snx3')
-
-#markers from publication https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7896205/
-proinf <- c('Il6', 'Il1b','Nos2','Tnf','H2-Aa')
-resting <- c('Cd47', 'Cxcr2', 'Cx3cr1', 'Cd200r1')
-antiinfl <- c('Cd36', 'Arg1', 'Pparg', 'Ppard','Tgfb1','Marco')
-aging <- c('Spp1', 'Igf1',  'Lamp1', 'Apoe', 'Cd63', 'Cst7')
-multi <- c('Apoe', 'Lpl','Trem2','Cd68','Cd81','Cebpa','Hmgb1','Hspd1','Snx3')
-alzheimer <- c('Apoe', 'Lpl', 'Trem2', 'Spp1', 'Cst7', 'Ctsd')
-injuries <- c('Tlr1','Ager','Il1b','Tnf','Il4','Il10','Igf1')
-
-#apoptosis
-prosurv <- c('Bcl2','Bcl2l1','Bcl2l2','Mcl1','Hba-a1')
-proap_multi <- c('Bax','Bak1','Bok')
-proap <- c('Bcl2l11','Bad','Bbc3','Bid','Bmf','Bik','Hrk')
-apoptosome <- c('Bik','Bad','Bid','Bax','Bcl2','Bcl2l1','Cycs','Apaf1','Casp9','Fas','Casp8')
-apoptosis <- c('Apip', 'Bak1', 'Bcl2', 'Bcl2l1', 'Casp8', 'Cdkn2a', 'Dapk3', 'Dnm1l', 'Gsn', 'Lmna', 'Lmnb1', 
-               'Ppp3r1', 'Psmc1', 'Psmd10', 'Psmd3', 'Psmd9', 'Psme3', 'Tfdp1')
-extrinsic <- c('Tradd','Traf2','Traf5','Ripk1','Clasp1','Clasp2','Fadd','Cflar','Casp8','Casp3','Casp7')
-intrinsic <- c('Bbc3','Bak1','Bax','Bcl2','Bid','Htra2','Diablo','Xiap')
-
-
-
-#chromatin remodeling markers from GO-BP 
-chromatin_rem <- c('Actl6a', 'Hdac2', 'Myc', 'Smarcb1', 'Ruvbl1', 'Mcrs1', 'Ruvbl2', 'Nudt5', 'Uchl5', 
-                   'Pole3', 'Gatad2a', 'Pih1d1', 'Smarcad1')
-adhesion <- c('Itga4', 'Itgal', 'Itgav', 'Adam9', 'Itgb1bp1')
-
-#markers from publication but which one Idk
-young_markers <- c('Ccr6','Slpi','Clec4d','Ifitm1','Plbd1')
-old_markers <- c('Ccl3','Pik3cd','Lyz1','Rdh12')
-
-
-#markers of disease microglia and IRM cells from biorxiv paper 
-disease <- c('B2m', 'Cd9', 'Fth1','Trem2')
-IRM <- c('Ifit2', 'Ifit3', 'Irf7','Oasl2')
-
-#hypoxia 
-hypoxia <- c('Bnip3', 'Adam8', 'Fam162a','Mif','Hilpda', 'Arg1')
-
 ####### data ########
 
 #read the data
-seu <- readRDS("data/seu_301123.RDS")
-
-
-
+seu <- readRDS("data/seu.RDS")
 
 ####### young #########
 
@@ -139,64 +41,44 @@ names(new_condition) <- levels(young)
 young <- RenameIdents(young, new_condition)
 young$condition <- Idents(young)
 
-
-#Add module scores
-young <- AddModuleScore(
-  object = young,
-  features = list(phagocytosis),
-  name = 'Phagocytosis'
-)
-
-
-##### all ####
-
-seu <- AddModuleScore(
-  object = seu,
-  features = list(multi),
-  name = 'Multiple sclerosis'
-)
-
-
-seu.sce <- as.SingleCellExperiment(seu)
-condition_mean <- aggregateAcrossCells(as(seu.sce, "SingleCellExperiment"),  
-                                       ids = seu.sce$condition, 
-                                       statistics = "mean",
-                                       use.assay.type = "counts")
-
-genenames <- as.data.frame(rownames(seu))
-
-#### plots young #######
+##### Figure 2 ########
 
 #dimplot with control and repopulated 
 Idents(young) <- "celltypes"
 DimPlot(young, split.by = "condition",  cols = alpha(colorpalette, 0.6), label = TRUE, label.size = 4, ncol = 1)
 
-
 #celltype contribution
 dittoBarPlot(young,"celltypes",group.by = "condition", color.panel = colorpalette,var.labels.reorder = c(4,1,5,2,6,3,7,8),
              main = "", xlab = "Condition", ylab = "Percentage of cells") + theme(axis.title.x = element_text(size = 15),
-                                                    axis.text.x = element_text(size = 12, colour = "black"),
-                                                    axis.title.y = element_text(size = 15),
-                                                    axis.text.y = element_text(size = 12),
-                                                    legend.text = element_text(size = 12))
+                                                                                  axis.text.x = element_text(size = 12, colour = "black"),
+                                                                                  axis.title.y = element_text(size = 15),
+                                                                                  axis.text.y = element_text(size = 12),
+                                                                                  legend.text = element_text(size = 12))
 
 #plot all chosen genes
+#chosen markers from all microglia subtypes
+markers <- as.factor(c("Tmem119", "P2ry12", "Jun", "Fos", "Bmp2k", "Notch2", 
+                       'H2-D1','H2-Oa','H2-DMa',
+                       "Esco1", "Cdk1", "H2afx",
+                       "Csf1", "Mif", "Ifit1", "Irf7"))
+
+
 DotPlot(young, features =markers) + RotatedAxis()
 
 
+#Add module scores
+proliferating_markers <- c("Cdkn2a", "Esco1", "Esco2",  "Cdk1", "H2afx")
+inflammation_markers <- c("Mcm5","Ifitm3", "Irf7", "Isg15", "Usp18", "Mif")
+premg_markers <- c("Csf1", "Mcm5", "Cst7", "Mif", "Ccl12", "Ccl3", "Ccl4", 
+                   "Ifit1", "Ifit3", "Ifit3b", "Ifitm3", "Irf7", "Isg15", "Usp18")
+phagocytosis <- c('Gpnmb', 'Lgals3','Fabp5', 'Apoe','Spp1', 'Cstb','Cstdc1')
+cytokine <- c('Tnf', 'Ccl2','Ccl3','Ccl4','Ccl7','Ccl12')
 
-#featureplot of prolif_MG marker genes
-VlnPlot(young, features = proliferating_markers, pt.size = 0, cols = colorpalette)
-VlnPlot(young, features = proliferating_markers, stack = TRUE, flip = TRUE)
-Plot_Density_Custom(young, features = "Mki67", custom_palette = brewer.pal(5, "Purples")) + ggtitle("Ki67") + 
-  theme(plot.title = element_text(size=20, face="italic", hjust = 0.5))
-Plot_Density_Joint_Only(young, features = proliferating_markers)
-
-#dotplot of marker genes spilted by conditions in celltypes
-DotPlot(young, features = premg_markers, split.by = "condition") + RotatedAxis()
-
-Plot_Density_Custom(young, features = inflammation_markers, custom_palette = brewer.pal(5, "Purples"), 
-                    pt.size = 0.5)
+young <- AddModuleScore(
+  object = young,
+  features = list(phagocytosis),
+  name = 'Phagocytosis'
+)
 
 premg <- RidgePlot(young, features = 'Premg1', cols = colorpalette)  + 
   labs(title = "Premature microglia", subtitle = 'Csf1, Mcm5, Cst7, Mif, Ccl12, Ccl3, \
@@ -252,6 +134,155 @@ phagocyt <- RidgePlot(young, features = 'Phagocytosis1', cols = colorpalette)  +
         axis.ticks.y=element_blank())
 
 plot_grid(premg, proli, infl, cyt, phagocyt, ncol = 5)
+
+
+#Feature density plot of Mki67
+Plot_Density_Custom(young, features = "Mki67", custom_palette = brewer.pal(5, "Purples")) + ggtitle("Ki67") + 
+  theme(plot.title = element_text(size=20, face="italic", hjust = 0.5))
+
+#Reactome pathway of pre-MG
+#search for the genes which identifies activated cell types
+celltypes <- FindAllMarkers(young, logfc.threshold = 0.25,  min.pct = 0.25, test.use = "negbinom")
+
+preMG <- celltypes[which(celltypes$cluster == "pre-MG"),]
+
+preMG_df <- as.data.frame(rownames(preMG))
+preMG_df <- cbind(preMG_df, preMG$avg_log2FC, preMG$p_val_adj)
+names(preMG_df) <- c('Gene.symbol','logFC','adj.P.Val')
+preMG_df$Gene.symbol <- toupper(preMG_df$Gene.symbol)
+preMG_Reactome <- run_pathfindR(preMG_df, gene_sets = 'Reactome')
+
+preMG_r <- preMG_Reactome
+
+preMG_10 <- preMG_r[which(preMG_r$ID == 'R-HSA-1169410'),]
+preMG_10 <- rbind(preMG_10, preMG_r[which(preMG_r$ID == 'R-HSA-909733'),],preMG_r[which(preMG_r$ID == 'R-HSA-975138'),], 
+                  preMG_r[which(preMG_r$ID == 'R-HSA-9020702'),],preMG_r[which(preMG_r$ID == 'R-HSA-9758274'),], 
+                  preMG_r[which(preMG_r$ID == 'R-HSA-1266695'),],preMG_r[which(preMG_r$ID == 'R-HSA-912694'),],
+                  preMG_r[which(preMG_r$ID == 'R-HSA-5218859'),],preMG_r[which(preMG_r$ID == 'R-HSA-445989'),],
+                  preMG_r[which(preMG_r$ID == 'R-HSA-877300'),],preMG_r[which(preMG_r$ID == 'R-HSA-5357801'),],
+                  preMG_r[which(preMG_r$ID == 'R-HSA-6785807'),],preMG_r[which(preMG_r$ID == 'R-HSA-877312'),])
+
+
+enrichment_chart(
+  result_df = preMG_10,
+  top_terms = 13,
+  num_bubbles = 5
+) +scale_color_gradientn(colors=viridis::viridis(n=15)) + theme(axis.text.y =element_text(size=12))
+
+
+##### Figure 3 ######
+
+
+
+###### markers #######
+
+#create vectors with marker genes 
+mg1_markers <- c("Tmem119", "Crybb1", "Cst3", "P2ry12", "Pros1")
+mg2_markers <- c("Jun", "Junb", "Jund", "Fos", "Klf6")
+mg3_markers <- c("Bmp2k", "Bhlhe41", "Ncoa3", "Tram1", "Notch2")
+
+actmg1 <- c('B2m','Bst2','Lgals3bp','Ccl2','Ccl12')
+actmg3 <- c('Lgals3','Fabp5', 'Gpnmb', 'Spp1', 'Apoe', 'Ctss', 'Cstb', 'Ctsd')
+Mhc <- c('H2-Aa','H2-Ab1','H2-Eb1','B2m','H2-D1','H2-K1','H2-Oa','H2-DMa')
+
+
+
+
+
+
+
+#disease associated microglia
+dam <- c('Apoe', 'Lpl', 'Trem2')
+#microglial neurodegenerative phenotype
+mgnd <- c('Apoe', 'Spp1', 'Trem2')
+#activated response microglia
+arm <- c('Apoe', 'Cst7', 'Ctsd')
+#micorglia inflamed in multiple sclerosis (MS)
+mims <- c('Apoe','Lpl','Trem2','Cd68')
+#in Amyotrophic lateral sclerosis
+alsdam <- c('Trem2', 'Cd81', 'Cebpa', 'Ptprg')
+#in Parkinson disease 
+pddam <- c('Hmgb1', 'Hspd1', 'Snx3')
+
+#markers from publication https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7896205/
+proinf <- c('Il6', 'Il1b','Nos2','Tnf','H2-Aa')
+resting <- c('Cd47', 'Cxcr2', 'Cx3cr1', 'Cd200r1')
+antiinfl <- c('Cd36', 'Arg1', 'Pparg', 'Ppard','Tgfb1','Marco')
+aging <- c('Spp1', 'Igf1',  'Lamp1', 'Apoe', 'Cd63', 'Cst7')
+multi <- c('Apoe', 'Lpl','Trem2','Cd68','Cd81','Cebpa','Hmgb1','Hspd1','Snx3')
+alzheimer <- c('Apoe', 'Lpl', 'Trem2', 'Spp1', 'Cst7', 'Ctsd')
+injuries <- c('Tlr1','Ager','Il1b','Tnf','Il4','Il10','Igf1')
+
+#apoptosis
+
+proap <- c('Bcl2l11','Bad','Bbc3','Bid','Bmf','Bik','Hrk')
+apoptosome <- c('Bik','Bad','Bid','Bax','Bcl2','Bcl2l1','Cycs','Apaf1','Casp9','Fas','Casp8')
+apoptosis <- c('Apip', 'Bak1', 'Bcl2', 'Bcl2l1', 'Casp8', 'Cdkn2a', 'Dapk3', 'Dnm1l', 'Gsn', 'Lmna', 'Lmnb1', 
+               'Ppp3r1', 'Psmc1', 'Psmd10', 'Psmd3', 'Psmd9', 'Psme3', 'Tfdp1')
+
+
+
+#chromatin remodeling markers from GO-BP 
+chromatin_rem <- c('Actl6a', 'Hdac2', 'Myc', 'Smarcb1', 'Ruvbl1', 'Mcrs1', 'Ruvbl2', 'Nudt5', 'Uchl5', 
+                   'Pole3', 'Gatad2a', 'Pih1d1', 'Smarcad1')
+
+
+
+
+
+#markers of disease microglia and IRM cells from biorxiv paper 
+disease <- c('B2m', 'Cd9', 'Fth1','Trem2')
+IRM <- c('Ifit2', 'Ifit3', 'Irf7','Oasl2')
+
+
+
+
+
+
+
+
+
+##### all ####
+
+seu <- AddModuleScore(
+  object = seu,
+  features = list(multi),
+  name = 'Multiple sclerosis'
+)
+
+
+seu.sce <- as.SingleCellExperiment(seu)
+condition_mean <- aggregateAcrossCells(as(seu.sce, "SingleCellExperiment"),  
+                                       ids = seu.sce$condition, 
+                                       statistics = "mean",
+                                       use.assay.type = "counts")
+
+genenames <- as.data.frame(rownames(seu))
+
+#### plots young #######
+
+
+
+
+
+
+
+
+
+
+#featureplot of prolif_MG marker genes
+VlnPlot(young, features = proliferating_markers, pt.size = 0, cols = colorpalette)
+VlnPlot(young, features = proliferating_markers, stack = TRUE, flip = TRUE)
+
+Plot_Density_Joint_Only(young, features = proliferating_markers)
+
+#dotplot of marker genes spilted by conditions in celltypes
+DotPlot(young, features = premg_markers, split.by = "condition") + RotatedAxis()
+
+Plot_Density_Custom(young, features = inflammation_markers, custom_palette = brewer.pal(5, "Purples"), 
+                    pt.size = 0.5)
+
+
 
 ####### plots all #######
 
