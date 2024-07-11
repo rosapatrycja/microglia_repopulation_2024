@@ -1,11 +1,13 @@
 library(Seurat)
+library(pathfindR)
+library(CellChat)
+library(NMF)
 library(tidyr)
 library(ggplot2)
 library(ggrepel)
 library(patchwork)
 library(cowplot)
 library(dittoSeq)
-library(pathfindR)
 library(RColorBrewer)
 library(Nebulosa)
 library(scCustomize)
@@ -13,9 +15,6 @@ library(qs)
 library(scuttle)
 library(ggpubr)
 library(reshape2)
-library(pathfindR)
-library(CellChat)
-library(NMF)
 library(ggalluvial)
 
 
@@ -277,14 +276,6 @@ EnhancedVolcano(top.table,
                 FCcutoff = 1)  
 
 #enrichment analysis using pathfindR
-diffexpgenes <- as.data.frame(rownames(top.table))
-diffexpgenes <- cbind(diffexpgenes, top.table$external_gene_name, top.table$logFC, top.table$adj.P.Val)
-names(diffexpgenes) <- c('Entrezid','Gene.symbol', 'logFC', 'adj.P.Val')
-
-diffexpgenes$Gene.symbol <- toupper(diffexpgenes$Gene.symbol)
-diffexpgenes <- diffexpgenes[,-1]
-#run enrichment analysis 
-Kegg <- run_pathfindR(diffexpgenes, pin_name_path = "KEGG")
 enrichment_chart(Kegg, top_terms = 15, 
                  num_bubbles = 5) + 
   scale_color_gradientn(colors=viridis::viridis(n=15)) + 
