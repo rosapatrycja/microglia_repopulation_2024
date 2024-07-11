@@ -31,6 +31,7 @@ condition_colors <- c('#919cb3', '#233867','#f5af91','#eb5f22')
 
 #read the data
 seu <- readRDS("data/seu.RDS")
+load('data/bulkRNAseq.RData')
 
 ####### young #########
 
@@ -260,140 +261,79 @@ cellchat <- computeCommunProb(cellchat)
 cellchat <- filterCommunication(cellchat, min.cells = 10)
 cellchat <- computeCommunProbPathway(cellchat)
 cellchat <- aggregateNet(cellchat)
-
-netAnalysis_signalingRole_network(cellchat, signaling = pathways.show, width = 8, height = 2.5, font.size = 10)
-
+# Compute the network centrality scores
+cellchat <- netAnalysis_computeCentrality(cellchat, slot.name = "netP")
 ht1 <- netAnalysis_signalingRole_heatmap(cellchat, pattern = "outgoing")
 ht2 <- netAnalysis_signalingRole_heatmap(cellchat, pattern = "incoming")
 ht1 + ht2
 
 
 ##### Figure 4 #####
+#Volcano plot from bluk RNAseq data analysis 
+EnhancedVolcano(top.table,
+                lab = top.table$external_gene_name,
+                x = 'logFC',
+                y = 'P.Value',
+                FCcutoff = 1)  
 
-###### markers #######
+#enrichment analysis using pathfindR
+diffexpgenes <- as.data.frame(rownames(top.table))
+diffexpgenes <- cbind(diffexpgenes, top.table$external_gene_name, top.table$logFC, top.table$adj.P.Val)
+names(diffexpgenes) <- c('Entrezid','Gene.symbol', 'logFC', 'adj.P.Val')
 
-#create vectors with marker genes 
-mg1_markers <- c("Tmem119", "Crybb1", "Cst3", "P2ry12", "Pros1")
-mg2_markers <- c("Jun", "Junb", "Jund", "Fos", "Klf6")
-mg3_markers <- c("Bmp2k", "Bhlhe41", "Ncoa3", "Tram1", "Notch2")
-
-actmg1 <- c('B2m','Bst2','Lgals3bp','Ccl2','Ccl12')
-actmg3 <- c('Lgals3','Fabp5', 'Gpnmb', 'Spp1', 'Apoe', 'Ctss', 'Cstb', 'Ctsd')
-Mhc <- c('H2-Aa','H2-Ab1','H2-Eb1','B2m','H2-D1','H2-K1','H2-Oa','H2-DMa')
-
-
-
-
-
+diffexpgenes$Gene.symbol <- toupper(diffexpgenes$Gene.symbol)
+diffexpgenes <- diffexpgenes[,-1]
+#run enrichment analysis 
+Kegg <- run_pathfindR(diffexpgenes, pin_name_path = "KEGG")
+enrichment_chart(Kegg, top_terms = 15, 
+                 num_bubbles = 5) + 
+  scale_color_gradientn(colors=viridis::viridis(n=15)) + 
+  theme(axis.text.y =element_text(size=12))
 
 
-#disease associated microglia
-dam <- c('Apoe', 'Lpl', 'Trem2')
-#microglial neurodegenerative phenotype
-mgnd <- c('Apoe', 'Spp1', 'Trem2')
-#activated response microglia
-arm <- c('Apoe', 'Cst7', 'Ctsd')
-#micorglia inflamed in multiple sclerosis (MS)
-mims <- c('Apoe','Lpl','Trem2','Cd68')
-#in Amyotrophic lateral sclerosis
-alsdam <- c('Trem2', 'Cd81', 'Cebpa', 'Ptprg')
-#in Parkinson disease 
-pddam <- c('Hmgb1', 'Hspd1', 'Snx3')
+#Heatmap of 100 expressed genes with the highest and lowest logFC
+pheatmap(mat = log10(dge$counts+1),
+         cluster_rows = FALSE,
+         cluster_cols = FALSE,
+         show_rownames = T,
+         annotation_row = dge$logFC,
+         annotation_colors = list(logFC = rev(brewer.pal(5, "Spectral"))),
+         labels_col =c("ctrl", "ctrl", "rep", "rep", "rep"),
+         color = rev(brewer.pal(9,"RdBu")))
 
-#markers from publication https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7896205/
-proinf <- c('Il6', 'Il1b','Nos2','Tnf','H2-Aa')
-resting <- c('Cd47', 'Cxcr2', 'Cx3cr1', 'Cd200r1')
-antiinfl <- c('Cd36', 'Arg1', 'Pparg', 'Ppard','Tgfb1','Marco')
-aging <- c('Spp1', 'Igf1',  'Lamp1', 'Apoe', 'Cd63', 'Cst7')
-multi <- c('Apoe', 'Lpl','Trem2','Cd68','Cd81','Cebpa','Hmgb1','Hspd1','Snx3')
-alzheimer <- c('Apoe', 'Lpl', 'Trem2', 'Spp1', 'Cst7', 'Ctsd')
-injuries <- c('Tlr1','Ager','Il1b','Tnf','Il4','Il10','Igf1')
 
-#apoptosis
-
-proap <- c('Bcl2l11','Bad','Bbc3','Bid','Bmf','Bik','Hrk')
-apoptosome <- c('Bik','Bad','Bid','Bax','Bcl2','Bcl2l1','Cycs','Apaf1','Casp9','Fas','Casp8')
+#apoptosis markers from Kegg pathway activated in bulk RNAseq enrichment analysis showed in scRNAseq data using heatmap
 apoptosis <- c('Apip', 'Bak1', 'Bcl2', 'Bcl2l1', 'Casp8', 'Cdkn2a', 'Dapk3', 'Dnm1l', 'Gsn', 'Lmna', 'Lmnb1', 
                'Ppp3r1', 'Psmc1', 'Psmd10', 'Psmd3', 'Psmd9', 'Psme3', 'Tfdp1')
 
 
+dittoHeatmap(condition_mean,
+             assay = "counts", 
+             genes = apoptosis,
+             annot.by = "condition",
+             scale = "none",
+             heatmap.colors = rev(brewer.pal(11,'RdBu')),
+             annot.colors = condition_colors)
 
 
+#Feature Density Plot of apoptosome markers
+apoptosome <- c('Bik','Bad','Bid','Bax','Bcl2','Bcl2l1','Cycs','Apaf1','Casp9','Fas','Casp8')
+
+Plot_Density_Joint_Only(seu, features = apoptosome, custom_palette = brewer.pal(5,"Purples")) + 
+  ggtitle("Bik, Bad, Bid, Bax, Bcl2, Bcl2l1, Cycs, Apaf1, Casp9, Fas, Casp8") + 
+  theme(plot.title = element_text(size=14, face="italic"))
 
 
-
-
-#markers of disease microglia and IRM cells from biorxiv paper 
-disease <- c('B2m', 'Cd9', 'Fth1','Trem2')
-IRM <- c('Ifit2', 'Ifit3', 'Irf7','Oasl2')
-
-
-
-
-
-
-
-
-
-##### all ####
+#Ridge plot of neurodegenerative processes markers in microglia
+aging <- c('Spp1', 'Igf1',  'Lamp1', 'Apoe', 'Cd63', 'Cst7')
+multi <- c('Apoe', 'Lpl','Trem2','Cd68','Cd81','Cebpa','Hmgb1','Hspd1','Snx3')
+alzheimer <- c('Apoe', 'Lpl', 'Trem2', 'Spp1', 'Cst7', 'Ctsd')
 
 seu <- AddModuleScore(
   object = seu,
   features = list(multi),
   name = 'Multiple sclerosis'
 )
-
-
-
-genenames <- as.data.frame(rownames(seu))
-
-#### plots young #######
-
-
-
-
-
-
-
-
-
-
-#featureplot of prolif_MG marker genes
-VlnPlot(young, features = proliferating_markers, pt.size = 0, cols = colorpalette)
-VlnPlot(young, features = proliferating_markers, stack = TRUE, flip = TRUE)
-
-Plot_Density_Joint_Only(young, features = proliferating_markers)
-
-#dotplot of marker genes spilted by conditions in celltypes
-DotPlot(young, features = premg_markers, split.by = "condition") + RotatedAxis()
-
-Plot_Density_Custom(young, features = inflammation_markers, custom_palette = brewer.pal(5, "Purples"), 
-                    pt.size = 0.5)
-
-
-
-####### plots all #######
-
-
-
-
-
-Idents(seu) <- "condition"
-
-
-#apoptosis
-Plot_Density_Joint_Only(seu, features = apoptosome, custom_palette = brewer.pal(5,"Purples")) + 
-  ggtitle("Bik, Bad, Bid, Bax, Bcl2, Bcl2l1, Cycs, Apaf1, Casp9, Fas, Casp8") + 
-  theme(plot.title = element_text(size=14, face="italic"))
-
-
-
-
-
-
-
-
-DotPlot(seu, features = apoptosome)
 
 Idents(seu) <- 'condition'
 
@@ -428,37 +368,4 @@ c <- RidgePlot(seu, features =  'Multiple sclerosis1', cols = condition_colors) 
 ggarrange(a, b, c, ncol = 3)
 
 
-#Cell publication 2018, Zeisell A. et al
-Plot_Density_Custom(seu, features = "Ptgds")
-Plot_Density_Joint_Only(seu, features = c('Il33', 'Ptgds'))
-Plot_Density_Joint_Only(seu, features = c('Abcg2','Pgp'))
-Plot_Density_Custom(seu, features = 'Slc47a1')
-Plot_Density_Custom(seu, features = 'Lum')
-
-#satelite glia
-Plot_Density_Joint_Only(seu, features = c('Slc7a2','Slc43a3','Slc27a1'))
-
-#enteric glia
-Plot_Density_Custom(seu, features = 'Top2a')
-Plot_Density_Custom(seu, features = 'Slc18a2')
-
-#Schwann cells
-Plot_Density_Joint_Only(seu, features=c('Pmp22', 'Mpz','Cd9','Sparc'))
-
-
-#microglia depletion Nat. Com paper
-#foamy microglia
-Plot_Density_Joint_Only(seu, features = c('Spp1','Msr1','Cd84'))
-
-#disease-associated microglia
-Plot_Density_Joint_Only(seu, features = c('Spp1', 'Cd68', 'Tlr2', 'Tlr7','Msr1'))
-
-#innate immune responses
-Plot_Density_Joint_Only(seu, features = c('Ccl2','Spp1', 'Cd74','Cd86'))
-
-#proinflammatory cytokines secretion
-Plot_Density_Joint_Only(seu, features = c('Il1b','Il10'))
-
-#reactive microglial types
-Plot_Density_Joint_Only(seu, features = c('Itgax','Trem2','Csf1','H2-Ab1'))
 
